@@ -8,10 +8,10 @@ from urllib.request import urlopen
 import numpy as np
 import cv2
 
-# Website address here, the place where you want to capture the images
-url = ""
-full_pot_area = 160000.0 # This value is taken from checking the contour area of a full pot image
-empty_pot_area = 40000.0 # This value is taken from checking the contour area of almost empty pot image
+
+url = "http://hindulaatti.ddns.net:3000/"
+full_pot_area = 100000.0 # This value is taken from checking the contour area of a full pot image
+empty_pot_area = 2000.0 # This value is taken from checking the contour area of almost empty pot image
 
 def convert_image_return_threshold(img):
     # Convert the image to gray and then reduce sharpness with blurring
@@ -19,7 +19,7 @@ def convert_image_return_threshold(img):
     blur = cv2.GaussianBlur(gray, (5,5), 0)
     
     # Do binary thresholding to the blurred image, pixel color value 75 is cut off point, can be adjusted
-    ret, thresh = cv2.threshold(blur, 75, 255, cv2.THRESH_BINARY_INV)
+    ret, thresh = cv2.threshold(blur, 83, 255, cv2.THRESH_BINARY_INV)
     return thresh
 
 
@@ -33,7 +33,7 @@ def calculate_area(contours, max_value, min_value):
     # Find the largest contour (this is always the area of coffee pot) and calculate its area
     largest = max(contours, key = cv2.contourArea)
     area = cv2.contourArea(largest)
-    
+    print(area)
     # Normalize the area between 0 and 1 using the full and empty coffee pot values.
     # Multiply by 100 to get fill percentage
     converted_area = ((area - min_value) / (max_value - min_value) * 100)
@@ -68,9 +68,10 @@ try:
 
     # Read saved images. Files are stored in same location as python script
     # You can also read directly from source, no need to save files, adjust the code as needed
-    # Change the variablenames for something better that suits you
-    img_ict = cv2.imread('coffee40.jpg') # Replace coffee40 with image captured from camera 1
-    img_seppis = cv2.imread('coffee50.jpg') # Replace coffee50 with image captured from camera 2
+    img_ict = cv2.imread('ict_image.jpg')
+    img_ict = img_ict[108:317, 346:554]
+    
+    img_seppis = cv2.imread('kahvi50.jpg') # Replace kahvi50 with seppis_image.jpg once camera is installed
 
     img_ict_thresh = convert_image_return_threshold(img_ict)
     img_seppis_thresh = convert_image_return_threshold(img_seppis)
@@ -81,16 +82,20 @@ try:
     ict_pot_area = calculate_area(ict_contours, full_pot_area, empty_pot_area)
     seppis_pot_area = calculate_area(seppis_contours, full_pot_area, empty_pot_area)
     
+    ict_value = ict_pot_area
+    seppis_value = seppis_pot_area
+    
     if ict_pot_area > 100:
         ict_pot_area = 100.0
         print("ICT office is full of coffee! Pls send help!")
+    else:
+        print("ICT Office Coffee Value is {}".format(round(ict_value, 2)))
         
     if seppis_pot_area > 100:
         seppis_pot_area = 100.0
         print("Seppis office is full of coffee! Pls send help!")
     
-    ict_value = ict_pot_area
-    seppis_value = seppis_pot_area
+
 
     # For visualizing whats happening
     visualize(ict_contours, img_ict_thresh, img_ict)
